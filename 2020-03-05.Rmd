@@ -7,6 +7,9 @@ output:
   pdf_document: default
 ---
 
+this is a test
+again a test
+
 ## Thoughts
 
 In practice (G Computation)
