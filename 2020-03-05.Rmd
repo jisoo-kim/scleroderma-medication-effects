@@ -9,6 +9,7 @@ output:
 
 this is a test
 again a test
+third test
 
 ## Thoughts
 
