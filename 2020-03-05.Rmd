@@ -334,7 +334,7 @@ med[MMF == 0 & nonMMF == 1 , type := 4] # 4 only others
 med = med[, c("Patient.ID", "Meds.Date", "type"), with=F]
 
 # longitudinal data for lung and heart
-colnames(pft)[2] = "pftDate";pft$pftDate = datf(pft$pftDate)
+colnames(pft)[2] = "pftDate"; pft$pftDate = datf(pft$pftDate)
 pft$Pt.ID = as.numeric(pft$Pt.ID)
 setDT(pft)
 
