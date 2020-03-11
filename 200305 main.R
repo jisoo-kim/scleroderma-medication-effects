@@ -61,19 +61,48 @@ source("i_Y_a.R")
 
 # Y ~ A
 load("Data Processing for Outcome Treatment Models V1.RData") # data: pd
-# define natural spline basis of Year time
-tmp = ns(pd$YTime,df = 2)
-pd$nt1 = tmp[,1]; pd$nt2 = tmp[,2]
 
 #prior <- list(R = list(V = diag(2)/3, n = 2), G = list(
 #  G1 = list(V = diag(2)/3, n = 2), G2 = list(V = diag(2)/3, n = 2)))
-m1 = MCMCglmm(
-  fixed = cbind(FVC, RVSP, mRSS) ~ - 1 + trait:nt1 + trait:nt2 +
-    trait:medtype_0 + trait:medtype_1 + trait:medtype_2 + trait:medtype_3,
-  random = ~ idh(trait):nt1 + idh(trait):nt2,
-  rcov = ~ us(trait):units, 
-  family = c("gaussian", "gaussian", "gaussian"), nitt = 60, burnin = 10,
-  thin = 1, data = pd)
+pd = pd[YTime >= 0 & YTime <= 40,]
 
+
+V.R = diag(2); nu.R = 3 # uniform correlation
+V.G = diag(c(1, 1, 0.005, 0.005)); nu.G = 4 # mean is V.G
+b0 = c(matrix(c(0,0,0,0,0,2.17,2.17, 2.5,
+       0,0,0,0,0,7.59,7.59, 8), byrow = T, nrow = 2))
+V.B = diag(c(rep(1e+10,10), rep(c((1.65/1.96)^2,10.1^2),2 ) ,(2.6/1.96)^2, 8.3^2))
+
+#literatures mostly 12 months
+#FVC: MMF from SLSII; others by subjective esitmate
+#mRSS:MMF from Le et al. , others taken from IVIG in Poelman et al.
+
+nitt = 10000; burnin = 1000
+nitt = 10; burnin = 3
+# pr=TRUE, store posterior distribution of random effects
+colnames(pd)[1] = "pid"
+
+m1 = MCMCglmm(
+  fixed = cbind(FVC, mRSS) ~ trait:(-1 + ns(YTime, knots = c(10, 30), Boundary.knots= c(0, 40)) +
+    medtype_n1 + medtype_0 + medtype_2 + medtype_3 + medtype_4),
+  random = ~ us(trait + trait:YTime):pid, pr = TRUE,
+  rcov = ~ us(trait):units,
+  prior = list(R = list(V = V.R, nu = nu.R),
+               G = list(G1 = list(V = V.G, nu = nu.G))),
+  family = c("gaussian", "gaussian"), nitt = nitt, burnin = burnin,
+  data = pd)
+
+m2 = MCMCglmm(
+  fixed = cbind(FVC, mRSS) ~ trait:(-1 + ns(YTime, knots = c(10, 30), Boundary.knots= c(0, 40)) +
+                                      medtype_n1 + medtype_0 + medtype_2 + medtype_3 + medtype_4),
+  random = ~ us(trait + trait:YTime):pid, pr = TRUE,
+  rcov = ~ us(trait):units,
+  prior = list(R = list(V = V.R, nu = nu.R),
+               G = list(G1 = list(V = V.G, nu = nu.G)),
+               B = list(mu = b0, V = V.B)),
+  family = c("gaussian", "gaussian"), nitt = nitt, burnin = burnin,
+  data = pd)
+
+summary(m1)
 plot(m1$VCV)
 plot(m1$Sol)
