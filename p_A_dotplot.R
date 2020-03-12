@@ -49,8 +49,8 @@ for( i in 1:pncol ){
   pd = pdall[id %in% rg, ]; pdfup = unique(pd[, c("id", "fup"), with=F])
   
   plot(pd$YTime, pd$id, xlab="", ylab="",  yaxt='n',
-       main="", col = pd$type, pch = 19, panel.first=for(k in 1:nrow(pdfup))  lines(c(0,pdfup[k,2]), rep(pdfup[k,1],2), type = "l", lty = 1,col = rgb(red = 190/255, green =190/255, blue = 190/255, alpha = 0.5)))
-  
+       main="", col = pd$type, pch = 19, panel.first=for(k in 1:nrow(pdfup))  lines(c(0,pdfup[k,2]), rep(pdfup[k,1],2), type = "l", lty = 1,col = rgb(red = 190/255, green =190/255, blue = 190/255)))
+  axis(2, at = unique(pd$id),labels =as.character(unique(pd$Patient.ID)), las = 2, cex.axis = 0.5)
 }
 #par(mai=c(0,0,0,0))
 par(mar=c(0,0,1.3,0))

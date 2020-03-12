@@ -1,3 +1,6 @@
+#library(MNP)
+#https://github.com/yizhenxu/GcompBART
+
 # Delete records from people without date of onset
 d = dat[!is.na(YTime),] #11661 records from 1155 patients
 
