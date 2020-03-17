@@ -8,22 +8,14 @@ if(name == "JK"){
 }
 
 ##### Packages ##### 
+devtools::install_github("jakesherman/packages")
 
-library(plyr)
-library(tidyr)
-library(ggplot2)
-library(tidyr)
-library(openxlsx)
-library(gridExtra)
-library(lubridate)
-library(data.table)
-library(VIM)
-library(poLCA)
-library(lme4)
-library(splines)
-library(MCMCglmm)
-library(nnet) # for function class.ind(), create indicators for multinomial variables
-library(zoo) # for function na.locf(), carry forward/backward in case of missingness 
+my_packages = c("plyr","tidyr","ggplot2","gridExtra","openxlsx","lubridate","data.table",
+                "VIM","poLCA","lme4","splines","MCMCglmm","nnet","zoo")
+packages(my_packages)
+libraries(my_packages)
+#nnet: for function class.ind(), create indicators for multinomial variables
+#zoo : # for function na.locf(), carry forward/backward in case of missingness 
 
 # Data processing
 ## Combining ()
