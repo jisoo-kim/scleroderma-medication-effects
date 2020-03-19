@@ -1,4 +1,4 @@
-load("Data Processing V1.RData") #load d
+load("Data.RData") #load d
 
 # Delete records from people without date of onset or before onset
 d = d[!is.na(YTime),] #21841 records from 1202 patients
@@ -31,7 +31,7 @@ pd[, medtype_n1 := 0]
 pd[, num := 1:(.N), by = Patient.ID]; pd[num <= tmp[1], medtype_n1 := 1, by = Patient.ID]
 pd[, num := NULL]
 
-# Carry forward medication type; NA if the observed is NA and the gap > 180 days
+# Carry backward medication type; NA if the observed is NA and the gap > 180 days
 pd[, cbtype :=na.locf(type,na.rm = F,fromLast = TRUE), by = Patient.ID]
 pd[, mTime := YTime]; pd[med == 0, mTime := NA]
 pd[, cbTime := na.locf(mTime,na.rm = F,fromLast = TRUE), by = Patient.ID]; pd[, mTime := NULL]

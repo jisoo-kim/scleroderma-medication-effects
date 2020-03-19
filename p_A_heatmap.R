@@ -1,4 +1,4 @@
-load("Data Processing V1.RData") #load d
+load("Data.RData") #load d
 mv = c("Pred","MTX","MMF","CTX","IVIG","AZA","Rituximab","Tocilizumab","HCQ","TNF","LEF")
 pd = d[!is.na(med) & med == 1, mv,with=F]
 

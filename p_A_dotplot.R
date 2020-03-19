@@ -1,10 +1,17 @@
-load("Data Processing V1.RData") #load d
+load("Data.RData") #load d
 
 # Define length of follow-up
+if(onset == 1){
+  d$YTime = d$YTime1
+} else {
+  d$YTime = d$YTime0
+}
+
 d[, fup := YTime[.N], by = Patient.ID]
+d[, sup := YTime[1], by = Patient.ID]
 
 mv = c("Pred","MTX","MMF","CTX","IVIG","AZA","Rituximab","Tocilizumab","HCQ","TNF","LEF")
-pd = d[!is.na(med) & med == 1, c("Patient.ID", "YTime", "fup", mv),with=F]
+pd = d[!is.na(med) & med == 1, c("Patient.ID", "YTime", "fup", "sup", mv),with=F]
 
 pd$nonMMF = apply(pd[,mv[-3],with=F],1,function(x) 1*(sum(x)!=0) )# indicator of on trt (excluding MMF)
 
@@ -29,7 +36,7 @@ if(trt_type == 2){
   
 }
 
-pd = pd[, c("Patient.ID", "YTime", "fup", "type"), with=F]
+pd = pd[, c("Patient.ID", "YTime", "fup", "sup", "type"), with=F]
 
 # nid number of patients into two columns of plots
 nid = 100; pncol = 2
@@ -42,15 +49,18 @@ m = matrix(c(1,2,3,3),nrow = 2,ncol = pncol,byrow = TRUE)
 layout(mat = m,heights = c(0.9,0.1))
 for( i in 1:pncol ){
   if(i==1) par(mai=c(0,0,0,0.2))
-  if(i==2) par(mai=c(0,0.2,0,0))
+  if(i==2) par(mai=c(0,0,0,0.2))
   nn =  floor(nid/pncol)-1
   ln = floor(nid/pncol)*(i-1)+1
   rg = ln:(ln+nn)
-  pd = pdall[id %in% rg, ]; pdfup = unique(pd[, c("id", "fup"), with=F])
+  pd = pdall[id %in% rg, ]; pdfup = unique(pd[, c("id", "fup", "sup", "Patient.ID"), with=F])
   
-  plot(pd$YTime, pd$id, xlab="", ylab="",  yaxt='n',
-       main="", col = pd$type, pch = 19, panel.first=for(k in 1:nrow(pdfup))  lines(c(0,pdfup[k,2]), rep(pdfup[k,1],2), type = "l", lty = 1,col = rgb(red = 190/255, green =190/255, blue = 190/255)))
-  axis(2, at = unique(pd$id),labels =as.character(unique(pd$Patient.ID)), las = 2, cex.axis = 0.5)
+  plot(pd$YTime, pd$id, xlab="", ylab="",  yaxt='n', axes = F, xlim = c(0,max(pd$YTime,na.rm=T)+4),
+       main="", col = pd$type, pch = 19, panel.first=for(k in 1:nrow(pdfup))  lines(c(pdfup[k,3], pdfup[k,2]), rep(pdfup[k,1],2), type = "l", lty = 1,col = rgb(red = 190/255, green =190/255, blue = 190/255)))
+  #axis(2, at = unique(pd$id),labels =as.character(unique(pd$Patient.ID)), las = 2, cex.axis = 0.5)
+  axis(1)
+  abline(v = 0)
+  text(pdfup$fup + 3, pdfup$id, pdfup$Patient.ID)
 }
 #par(mai=c(0,0,0,0))
 par(mar=c(0,0,1.3,0))

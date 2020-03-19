@@ -127,26 +127,41 @@ dat[, mrss := !is.na(skinDate)]; dat[, ("skinDate") := NULL]
 setDT(visdat)
 
 # Extract variables from visit data ("DateOnset", "DOB","Sex","ethnic","Race1")
-visdat[, DateOnset := pmin(datf(DateOnRP), datf(Date1stSymptom), na.rm = T)]
-tmp = visdat[, c("Patient.ID", "DateOnset", "DOB","Sex","ethnic","Race1")]; setDT(tmp)
+
+#visdat[, DateOnset1 := pmin(datf(DateOnRP), datf(Date1stSymptom), na.rm = T)]
+visdat[, DateOnset1 := datf(DateOnRP)]
+visdat[, DateOnset0 := datf(Date1stSymptom)]
+
+# Further define baseline variables
+visdat[,.N,by = 'SCL-70']; visdat[, SCL70 := get('SCL-70')]; visdat[SCL70 == 3, SCL70 := 1]; visdat[,.N,by = SCL70]
+visdat[,.N,by = ACA]; visdat[ACA == 3, ACA := 1]; visdat[,.N,by = ACA]
+visdat[,.N,by = RNAPol]; visdat[RNAPol == 3, RNAPol := 1]; visdat[,.N,by = RNAPol]
+
+##### Select relevant covariates #####
+
+tmp = visdat[, c("Patient.ID", "DateOnset0", "DateOnset1", "DOB","Sex","ethnic","Race1", "ACA", "SCL70", "RNAPol")]; setDT(tmp)
 
 # Combine the extracted visit data into med
 setkey(tmp, Patient.ID); setkey(dat, Patient.ID)
 dat = merge(dat, tmp, all.x=TRUE)
 ## Define Time since Onset
-dat[, YTime := round(as.numeric(Date - DateOnset)/365,2)]
+dat[, YTime1 := round(as.numeric(Date - DateOnset1)/365,2)]
+dat[, YTime0 := round(as.numeric(Date - DateOnset0)/365,2)]
+
 ## Define Age based on Date of Birth; age: 16 ~ 96, median 55
 dat$DOB = datf(dat$DOB)
 dat[, age := round(as.numeric(Date - DOB)/365) ]
 dat[, DOB := NULL]
 
 ##### Clean Data for modeling ##### 
-d = dat[, c("Patient.ID", "Date", "YTime", "age", "Sex", "ethnic", "Race1", "Height", "Weight", 
+d = dat[, c("Patient.ID", "Date", "YTime0", "YTime1", "age", "Sex", "ethnic", "Race1", "Height", "Weight", 
+            "ACA", "SCL70", "RNAPol",
             "stppFVC", "stppDLCO", "RVSP", "Ejection.Fraction", "Total.Skin.Score",
             "Pred", "MTX", "MMF", "CTX", "IVIG", "AZA",
             "Rituximab", "Tocilizumab", "HCQ", "TNF", "LEF",
             "pft", "mrss", "echo", "med"), with=F]
-colnames(d) =  c("Patient.ID", "Date", "YTime", "age", "Sex", "ethnic", "Race", "Height", "Weight", 
+colnames(d) =  c("Patient.ID", "Date", "YTime0", "YTime1", "age", "Sex", "ethnic", "Race", "Height", "Weight", 
+                 "ACA", "SCL70", "RNAPol",
                  "FVC", "DLCO", "RVSP", "EF", "mRSS",
                  "Pred", "MTX", "MMF", "CTX", "IVIG", "AZA",
                  "Rituximab", "Tocilizumab", "HCQ", "TNF", "LEF",
@@ -157,22 +172,26 @@ d[, mrss := 1*(!is.na(mrss) & mrss == TRUE)]
 d[, echo := 1*(!is.na(echo) & echo == TRUE)]
 d[, med := 1*(!is.na(med) & med == TRUE)]
 
+# Delete missing covariates in antibodies (ACA, SCL70, RNAPol) (6ppl) and Sex/ethnic/race (3ppl)
+
+d = d[!is.na(RNAPol) & !is.na(ethnic),] # 21872 -> 21751 rows
+
 # Number of outcome observation per person
 vlist = c("FVC", "DLCO", "RVSP", "EF", "mRSS")
 for(v in  vlist){
   d[, (paste0("n",v)) := sum(!is.na(get(v))), by = Patient.ID]
 }
-###### FIX
-d[, nmin := pmin(nFVC, nDLCO, nRVSP, nEF, nmRSS )]
+d[, nmed := sum(med), by = Patient.ID]
+d[, nmin := pmin(nFVC, nDLCO, nRVSP, nEF, nmRSS, nmed)]
 #d[, keep := 1*(nmin >=4)]; d[, .N, by = keep] # keep 13193 discard 8679, 
 #length(unique(d[keep==1, Patient.ID])) # keep 371 patients out of 1211 
 
 # scale outcomes
 for(v in c("FVC", "DLCO", "RVSP", "EF", "mRSS")){
   if(v %in% c("RVSP", "mRSS")){
-    d[, (v) := scalevec(-get(v))]
+    d[, (paste0(v,"t")) := scalevec(-get(v))]
   } else {
-    d[, (v) := scalevec(get(v))]
+    d[, (paste0(v,"t")) := scalevec(get(v))]
   }
   
 }

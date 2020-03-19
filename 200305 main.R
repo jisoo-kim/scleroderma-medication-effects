@@ -8,12 +8,12 @@ if(name == "JK"){
 }
 
 ##### Packages ##### 
-devtools::install_github("jakesherman/packages")
-
+library("easypackages")
 my_packages = c("plyr","tidyr","ggplot2","gridExtra","openxlsx","lubridate","data.table",
                 "VIM","poLCA","lme4","splines","MCMCglmm","nnet","zoo")
 packages(my_packages)
 libraries(my_packages)
+
 #nnet: for function class.ind(), create indicators for multinomial variables
 #zoo : # for function na.locf(), carry forward/backward in case of missingness 
 
@@ -25,7 +25,7 @@ libraries(my_packages)
 # "Pred", "MTX", "MMF", "CTX", "IVIG", "AZA", "Rituximab", "Tocilizumab", "HCQ", "TNF", "LEF",
 # "pft", "mrss", "echo", "med")
 
-source("Data Processing V1.R")
+source("Data Processing V2.R")
 
 # p_A_heatmap
 ## diag_cmb = TRUE if diagonal includes medication combinations
@@ -39,7 +39,11 @@ diag_cmb = "all"; source("p_A_heatmap.R")
 ### trt_type : treatment types
 ###            1 if no trt, MMF only, MMF+, others
 ###            2 if no trt, MMF only, Pred only, MMF+, others 
+### onset    : 1 if on set is On RP, 0 if non-RP (skin)
+### Time = 0 : onset
+### Grey line: 1st input ~ last input available
 
+onset = 0
 set.seed(1)
 trt_type = 1; source("p_A_dotplot.R")
 
