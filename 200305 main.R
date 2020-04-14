@@ -11,7 +11,7 @@ if(name == "JK"){
 library("easypackages")
 my_packages = c("plyr","tidyr","ggplot2","gridExtra","openxlsx","lubridate","data.table",
                 "VIM","poLCA","lme4","splines","MCMCglmm","nnet","zoo")
-packages(my_packages)
+#packages(my_packages)
 libraries(my_packages)
 
 #nnet: for function class.ind(), create indicators for multinomial variables
@@ -102,3 +102,5 @@ m2 = MCMCglmm(
 summary(m1)
 plot(m1$VCV)
 plot(m1$Sol)
+
+# Causal Model
