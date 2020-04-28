@@ -3,7 +3,7 @@ load("Data.RData") #load d
 # Define length of follow-up
 if(onset == 1){
   d$YTime = d$YTime1
-} else {
+} else if(onset == 2){
   d$YTime = d$YTime0
 }
 

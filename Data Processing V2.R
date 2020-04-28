@@ -131,6 +131,7 @@ setDT(visdat)
 #visdat[, DateOnset1 := pmin(datf(DateOnRP), datf(Date1stSymptom), na.rm = T)]
 visdat[, DateOnset1 := datf(DateOnRP)]
 visdat[, DateOnset0 := datf(Date1stSymptom)]
+visdat[, DateOnset := pmin(datf(DateOnRP), datf(Date1stSymptom), na.rm = T)]
 
 # Further define baseline variables
 visdat[,.N,by = 'SCL-70']; visdat[, SCL70 := get('SCL-70')]; visdat[SCL70 == 3, SCL70 := 1]; visdat[,.N,by = SCL70]
@@ -139,7 +140,7 @@ visdat[,.N,by = RNAPol]; visdat[RNAPol == 3, RNAPol := 1]; visdat[,.N,by = RNAPo
 
 ##### Select relevant covariates #####
 
-tmp = visdat[, c("Patient.ID", "DateOnset0", "DateOnset1", "DOB","Sex","ethnic","Race1", "ACA", "SCL70", "RNAPol")]; setDT(tmp)
+tmp = visdat[, c("Patient.ID", "DateOnset", "DateOnset0", "DateOnset1", "DOB","Sex","ethnic","Race1", "ACA", "SCL70", "RNAPol")]; setDT(tmp)
 
 # Combine the extracted visit data into med
 setkey(tmp, Patient.ID); setkey(dat, Patient.ID)
@@ -147,6 +148,7 @@ dat = merge(dat, tmp, all.x=TRUE)
 ## Define Time since Onset
 dat[, YTime1 := round(as.numeric(Date - DateOnset1)/365,2)]
 dat[, YTime0 := round(as.numeric(Date - DateOnset0)/365,2)]
+dat[, YTime := round(as.numeric(Date - DateOnset)/365,2)]
 
 ## Define Age based on Date of Birth; age: 16 ~ 96, median 55
 dat$DOB = datf(dat$DOB)
@@ -154,13 +156,13 @@ dat[, age := round(as.numeric(Date - DOB)/365) ]
 dat[, DOB := NULL]
 
 ##### Clean Data for modeling ##### 
-d = dat[, c("Patient.ID", "Date", "YTime0", "YTime1", "age", "Sex", "ethnic", "Race1", "Height", "Weight", 
+d = dat[, c("Patient.ID", "Date", "YTime", "YTime0", "YTime1", "age", "Sex", "ethnic", "Race1", "Height", "Weight", 
             "ACA", "SCL70", "RNAPol",
             "stppFVC", "stppDLCO", "RVSP", "Ejection.Fraction", "Total.Skin.Score",
             "Pred", "MTX", "MMF", "CTX", "IVIG", "AZA",
             "Rituximab", "Tocilizumab", "HCQ", "TNF", "LEF",
             "pft", "mrss", "echo", "med"), with=F]
-colnames(d) =  c("Patient.ID", "Date", "YTime0", "YTime1", "age", "Sex", "ethnic", "Race", "Height", "Weight", 
+colnames(d) =  c("Patient.ID", "Date", "YTime", "YTime0", "YTime1", "age", "Sex", "ethnic", "Race", "Height", "Weight", 
                  "ACA", "SCL70", "RNAPol",
                  "FVC", "DLCO", "RVSP", "EF", "mRSS",
                  "Pred", "MTX", "MMF", "CTX", "IVIG", "AZA",

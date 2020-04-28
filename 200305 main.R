@@ -39,7 +39,7 @@ diag_cmb = "all"; source("p_A_heatmap.R")
 ### trt_type : treatment types
 ###            1 if no trt, MMF only, MMF+, others
 ###            2 if no trt, MMF only, Pred only, MMF+, others 
-### onset    : 1 if on set is On RP, 0 if non-RP (skin)
+### onset    : 0 if min of RP+nonRP, 1 if on set is On RP, 2 if non-RP (skin)
 ### Time = 0 : onset
 ### Grey line: 1st input ~ last input available
 
@@ -52,8 +52,8 @@ trt_type = 1; source("p_A_dotplot.R")
 ### idlist: ID numbers (of four people)
 
 idlist = c(16,3229,916,1642) # idlist = sample(unique(dat$Patient.ID),4)
-
-source("i_Y_a.R")
+idlist = c(2087, 1399, 3382, 2646)
+trt_type = 1; randomID = TRUE; source("i_Y_a.R")
 
 # Y ~ A
 load("Data Processing for Outcome Treatment Models V1.RData") # data: pd

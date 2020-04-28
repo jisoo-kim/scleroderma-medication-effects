@@ -1,4 +1,4 @@
-load("Data Processing V1.RData") #load d
+load("Data.RData") #load d
 
 ### Plot of (pFVC, -mRSS, EF) above and (Pred, MTX, MMF, CTX)
 mv = c("Pred","MTX","MMF","CTX","IVIG","AZA","Rituximab","Tocilizumab","HCQ","TNF","LEF")
@@ -6,6 +6,7 @@ dat = d[, c("Patient.ID","YTime","FVC", "DLCO", "RVSP", "EF", "mRSS", mv), with=
 colnames(dat)[7] = "nmRSS"; dat[,7] = -dat[,7]
 dat = dat[order(Patient.ID, YTime),]
 
+if(randomID) idlist = sample(unique(dat$Patient.ID),4)
 #length(unique(dat$Patient.ID)) # 1211 unique patients
 
 dat$nonMMF = apply(dat[,mv[-3],with=F],1,function(x) 1*(sum(x)!=0) )# indicator of on trt (excluding MMF)
@@ -65,12 +66,14 @@ for(id in idlist){
   mtext("-mRSS",side=4,col="red",line=2.5) 
   axis(4, ylim=range(RSS), col="red",col.axis="red",las=1)
   
-  ## Allow a third plot on the same graph
-  par(new=TRUE)
-  
-  ## Plot the third plot and put axis scale on right
-  plot(timeEF, EF, pch=15,  xlab="", ylab="", ylim=range(EF), xlim = rgt,
-       axes=FALSE, type="b", col="blue")
+  if(0){
+    ## Allow a third plot on the same graph
+    par(new=TRUE)
+    
+    ## Plot the third plot and put axis scale on right
+    plot(timeEF, EF, pch=15,  xlab="", ylab="", ylim=range(EF), xlim = rgt,
+         axes=FALSE, type="b", col="blue")
+  }
   
   ## Add Legend
   #legend("topright",legend=c("pFVC","mRSS"),
