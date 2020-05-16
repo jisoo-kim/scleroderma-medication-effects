@@ -158,7 +158,8 @@ dat = merge(dat, tmp, all.x=TRUE)
 ## Define Time since Onset
 #dat[, YTime1 := round(as.numeric(Date - DateOnset1)/365,2)]
 #dat[, YTime0 := round(as.numeric(Date - DateOnset0)/365,2)]
-dat[, YTime := as.numeric(Date - DateOnset)]
+#dat[, YTime := as.numeric(Date - DateOnset)]
+dat[, YTime := round(as.numeric(Date - DateOnset0)/365,2)]# for skin
 
 ## Define Age based on Date of Birth; age: 16 ~ 96, median 55
 dat$DOB = datf(dat$DOB)
@@ -286,7 +287,7 @@ d1 = d[Time >= 0,] #17889 -> 16176 rows
 d1 = d1[med == 1,] #11794 rows
 
 d1 = d1[, c("Patient.ID", "Time", "cbFVC", "cbmRSS", "type", "MMFdos0",
-              "age", "Sex", "ethnic", "Race", 
+              "age", "Sex", "ethnic", "Race", "YTime",
               "ACA", "SCL70", "RNAPol","cfcbFVC0", "cfcbmRSS0","cfcbFVC0t", "cfcbmRSS0t"), with=F]
 
 d1[, N := .N, by=Patient.ID]
@@ -319,7 +320,7 @@ colnames(d1)[ which(colnames(d1)%in% c("Time","cbFVC", "cbmRSS","type"))] = c("T
 d1 = d1[,c("Patient.ID", paste0("Time",0:2),
            paste0("FVC",0:2),paste0("mRSS",0:2),paste0("type",0:2),
            "MMFdos0",
-           "age", "Sex", "ethnic", "Race", 
+           "age", "Sex", "ethnic", "Race", "YTime",
            "ACA", "SCL70", "RNAPol",
            "cfcbFVC0", "cfcbmRSS0","cfcbFVC0t", "cfcbmRSS0t", "qlf"), with=F]
 d1 = d1[qlf == 1,] # 7890 three-visits windows from 815 ppl
@@ -365,6 +366,38 @@ if(0){
   lo <- loess(V2 ~ Time0, data=pd, span=0.30)
   lines(pd$Time,predict(lo), col='red', lwd=3)
   
+  
+  
+  par(mfrow=c(1,2))
+  # plot FVC of (A1, A2) = (1,1) vs (0,0)
+  tmp1 = d1[ type1 == 2 & type2 == 2, list(Time0, (FVC2 - FVC0)/(Time2 - Time0)) ]
+  tmp0 = d1[ type1 == 1 & type2 == 1, list(Time0, (FVC2 - FVC0)/(Time2 - Time0)) ]
+  # MMF red (2), no trt black (1)
+  tmp1$col = 2; tmp0$col=4; tmp = rbind(tmp1, tmp0); tmp = tmp[!is.na(V2)]
+  
+  plot(tmp[,V2], x=tmp[,Time0], col = alpha(tmp$col, 0.3), pch = tmp$col+18,cex=0.2, ylab =expression(Delta~'FVC'[2]),xlab = "Start Day of 3-Visit Window", main = paste0("[1,1] (N=",sum(tmp$col==2),") vs [0,0] (N=",sum(tmp$col==4),")"))
+  pd = tmp[col == 4]; pd = pd[order(Time0)]
+  lo <- loess(V2 ~ Time0, data=pd, span=0.30)
+  lines(pd$Time0,predict(lo), col='blue', lwd=3)
+  pd = tmp[col == 2]; pd = pd[order(Time0)]
+  lo <- loess(V2 ~ Time0, data=pd, span=0.30)
+  lines(pd$Time,predict(lo), col='red', lwd=3)
+  
+  # plot mRSS of (A1, A2) = (1,1) vs (0,0)
+  tmp1 = d1[ type1 == 2 & type2 == 2, list(Time0, (mRSS2 - mRSS0)/(Time2 - Time0)) ]
+  tmp0 = d1[ type1 == 1 & type2 == 1, list(Time0, (mRSS2 - mRSS0)/(Time2 - Time0)) ]
+  
+  # MMF red, no trt black
+  tmp1$col = 2; tmp0$col=4; tmp = rbind(tmp1, tmp0); tmp = tmp[!is.na(V2)]
+  
+  plot(tmp[,V2], x=tmp[,Time0], col = alpha(tmp$col, 0.3), pch = tmp$col+18,cex=0.2, ylab =expression(Delta~'mRSS'[2]),xlab = "Start Day of 3-Visit Window", main = paste0("[1,1] (N=",sum(tmp$col==2),") vs [0,0] (N=",sum(tmp$col==4),")"))
+  pd = tmp[col == 4]; pd = pd[order(Time0)]
+  lo <- loess(V2 ~ Time0, data=pd, span=0.30)
+  lines(pd$Time0,predict(lo), col='blue', lwd=3)
+  pd = tmp[col == 2]; pd = pd[order(Time0)]
+  lo <- loess(V2 ~ Time0, data=pd, span=0.30)
+  lines(pd$Time,predict(lo), col='red', lwd=3)
+  
 }
 
 
@@ -392,7 +425,7 @@ d2[, ethnic_0 := 1*(ethnic == 0)]; d2[, ethnic_1 := 1*(ethnic == 1)]; d2[, ethni
 #d2[, ILD := 1*(cfcbFVC0 < 70)]
 
 #V = c("Time0", "MMFdos0", "age", "Sex", "ACA", "SCL70", "RNAPol", "cfcbFVC0q", "cfcbmRSS0q","cfcbFVC0t", "cfcbmRSS0t", "Race_1", "Race_2", "ethnic_0", "ethnic_1")
-V = c("Time0", "MMFdos0", "age", "Sex", "ACA", "SCL70", "RNAPol", "cfcbFVC0", "cfcbmRSS0", "Race_1", "Race_2", "ethnic_0", "ethnic_1")
+V = c("Time0", "MMFdos0", "age", "Sex", "ACA", "SCL70", "RNAPol", "cfcbFVC0", "cfcbmRSS0", "Race_1", "Race_2", "ethnic_0", "ethnic_1", "YTime")
 
 misind = c()
 for(v in V){
@@ -404,7 +437,7 @@ for(v in V){
 misind = unique(misind)
 
 # Only consider 3-visit windows that have no missingness in V
-d3 = d2[-misind, ] # 7745 windows from 784 ppl
+d3 = d2[-misind, ] # 7745 windows from 784 ppl (without YTime), 7696 windows from 765 ppl (with YTime)
 
 if(0){
   # check distributions of V
@@ -418,11 +451,6 @@ if(0){
 # Only look at binary trt for now
 for(j in 0:2)
   d3[, (paste0("A",j)) := 1*(get(paste0("type",j)) ==2)]
-
-# transform health outcomes; DO THIS AT EXACTLY THE DATA FOR MODELING!!!!!!!!!!!
-for(v in c(paste0("FVC",0:2),paste0("mRSS",0:2),"cfcbFVC0", "cfcbmRSS0")){
-  d3[, (paste0(v,"q")) := scalevec(get(v))]
-}
 
 # checks
 #all(backscale(d3$mRSS1q, d3$mRSS1) == d3$mRSS1, na.rm=T)

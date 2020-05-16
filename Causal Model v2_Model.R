@@ -338,7 +338,7 @@ if(a1 == 0 & a2 == 0){
   pspp00 = pspp_t2; imputed00 = impute_t2
 }
 if(a1 == 1 & a2 == 1){
-  pspp11 = pspp_t2; imputed31 = impute_t2
+  pspp11 = pspp_t2; imputed11 = impute_t2
 }
 summary(pspp00); summary(pspp11)
 # chekc p values
@@ -351,12 +351,13 @@ b = summary(pspp11)$tTable; b[,5] = round(b[,5],3); b
 y00 = imputed00
 y00[which(d3$A1==0 & d3$A2==0 & !is.na(d3$mRSS2q))] = d3$mRSS2q[which(d3$A1==0 & d3$A2==0 & !is.na(d3$mRSS2q))]
 y00 = backscale(y00,d3$mRSS2)
-y11 = imputed31
+y11 = imputed11
 y11[which(d3$A1==1 & d3$A2==1 & !is.na(d3$mRSS2q))] = d3$mRSS2q[which(d3$A1==1 & d3$A2==1 & !is.na(d3$mRSS2q))]
+y11 = backscale(y11,d3$mRSS2)
 
-mean(y11-y00) #-5.115173
-mean(y11[d3$A0 == 1]) - mean(y00[d3$A0 == 1]) #-9.62013
-mean(y11[d3$A0 == 0]) - mean(y00[d3$A0 == 0]) #-3.81021
+mean(y11-y00) 
+mean(y11[d3$A0 == 1]) - mean(y00[d3$A0 == 1]) 
+mean(y11[d3$A0 == 0]) - mean(y00[d3$A0 == 0]) 
 
 d3[, dlt := y11 - y00]
 library(ggplot2)
@@ -429,3 +430,4 @@ if(0){
   lines(pd$Time,predict(lo), col='red', lwd=3)
   
 }
+z
