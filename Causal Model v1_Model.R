@@ -41,3 +41,5 @@ m1 = MCMCglmm(
                G = list(G1 = list(V = V.G, nu = nu.G))),
   family = c("gaussian", "gaussian"), nitt = nitt, burnin = burnin,
   data = dat)
+
+#modA = MCMCglmm (family=c("binomial"))
