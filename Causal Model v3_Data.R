@@ -402,3 +402,27 @@ for(j in 0:2)
 #all(backscale(d3$mRSS0q, d3$mRSS0) == d3$mRSS0, na.rm=T)
 
 save(d3, file = "tmp.RData")
+
+
+
+### Restrict to only those taking either no trt or MMF
+d3 = d3[type0 %in% c(1,2) & type1 %in% c(1,2),]
+#4539 pairs from 586 ppl
+
+scalevec <- function(mvec){as.data.frame(qqnorm(mvec))[, 1]}
+
+backscale <- function(mvec, obs){
+  obs = obs[!is.na(obs)]; obs = sort(obs); 
+  mvec1 = mvec[!is.na(mvec)]; ind = which(!is.na(mvec))
+  mvec[ind] = obs[ceiling(pnorm(mvec1)*length(obs))]
+  return(mvec)}
+
+# transform health outcomes; DO THIS AT EXACTLY THE DATA FOR MODELING!!!!!!!!!!!
+for(v in c(paste0("FVC",0:2),paste0("mRSS",0:2),"cfcbFVC0", "cfcbmRSS0")){
+  d3[, (paste0(v,"q")) := scalevec(get(v))]
+}
+
+dat = copy(d3)
+save(dat, file = "tmp_JK.RData")
+
+
