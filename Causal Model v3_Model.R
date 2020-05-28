@@ -38,21 +38,6 @@ Y = d4[, mRSS1q]
 A = d4[, A1]  
 
 
-X = cbind(V,l)
-model1b = lm(Y ~ -1+X)
-model1b$coefficients
-
-m1 = solve(t(V)%*%V); H = V %*% m1 %*% t(V)
-m2 = H %*% Y
-
-b1denom = as.numeric(t(l) %*% (l - H%*%l))
-b1 = m1 %*% t(V) %*% Y - m1 %*% t(V) %*%( l%*% t(l) %*% (Y - m2)) / b1denom 
-
-b2 = t(l) %*% (Y - m2)
-b2 = b2 / b1denom
-
-cbind(model1b$coefficients, c(b1,b2), solve(t(X)%*%X)%*%t(X)%*%Y)
-
 # (Va,A) for logistic regression
 # (Xv,Y) for linear regression, Y ~ X + l
 FitWeight = function(v, Va, A, Xv, Y){
@@ -157,6 +142,52 @@ plot(matrix(dltY1[1,1:65^2],65,65),cex.axis = 0.35,  col=topo.colors,
 plot(matrix(dltY0[1,1:65^2],65,65),cex.axis = 0.35,  col=topo.colors,
      xlab = "(D0,D1)",ylab = "(D0,D1)", main = "Influence of Observed (A,X,Y)'s on Potential Outcome Y(0) of one person in D1")
 
+############################################
+a = rbind(dltY1,dltY0); K = 10
+#a = dltY1; K = 10
+
+gap = (max(a) - min(a))/K
+# anchor interval centers at 0, (-gap/2, gap/2]
+ln = ceiling((-gap/2 - min(a))/gap) # number of intervals to the left of the anchor
+rn = ceiling((max(a) - gap/2)/gap) # number of intervals to the right of the anchor
+bl = -gap/2 - ln*gap; bu = gap/2 + rn*gap
+grid = bl + gap*(0:(ln+rn+1))
+
+e = ceiling((c(a) - bl)/gap)
+e[e==0] = 1; sort(unique(e))
+
+# match neutral color max(rn,ln)+1 to the anchor interval ln+1
+rbPalu <- colorRampPalette(c('yellow','red'))
+rbPall <- colorRampPalette(c('blue','green'))
+m = max(rn,ln); Col = c(rbPall(ln), NA,rbPalu(rn))
+#rbPal <- colorRampPalette(c('blue','red'))
+#Col = rbPal(2*m+1)
+#if(rn > ln){
+#  Col = Col[-(1:(rn - ln))]
+#} else if(rn < ln){
+#  Col = Col[1:(ln+1+rn)]
+#}
+
+n=nrow(a)
+dat = data.frame(x = rep(1:ncol(a), n), y = rep(1:n,each = ncol(a)), col = c(t(matrix(e, nrow = nrow(a))[1:n,])))
+sum(dat$col == ln + 1)
+
+# only plot those not in the anchor interval (which centers at zero) 
+#99.5% of entries are in the anchor interval
+pd = dat[dat$col != ln+1, ] 
+
+# Color Demo
+plot(1:length(Col), 1:length(Col), col = Col) 
+
+png("InfluencePlot.png", width = 20, height = 20, units = 'in', res = 600)
+plot(pd$x, pd$y, cex = 0.04,pch = 15,col = Col[pd$col], ylim = c(0,n+1), xlim = c(1,ncol(a)))
+dev.off()
+
+tiff("Plot3.tiff", width = 20, height = 20, units = 'in', res = 1000)
+plot(pd$x, pd$y, cex = 0.1,pch = 15,col = Col[pd$col], ylim = c(0,n+1), xlim = c(1,ncol(a)))
+dev.off()
+
+
 if(0){
   
   plot(matrix(dltY1[1,1:57^2],57,57),cex.axis = 0.35,  col=topo.colors,
@@ -164,5 +195,22 @@ if(0){
   
   plot(matrix(dltY1[1,3258+(1:31^2)],31,31),cex.axis = 0.35,  col=topo.colors,
        xlab = "D1",ylab = "D1", main = "Influence of Observed (A,X,Y)|D1 on Potential Outcome Y(1) of one person in D0")
+  
+  
+  
+  X = cbind(V,l)
+  model1b = lm(Y ~ -1+X)
+  model1b$coefficients
+  
+  m1 = solve(t(V)%*%V); H = V %*% m1 %*% t(V)
+  m2 = H %*% Y
+  
+  b1denom = as.numeric(t(l) %*% (l - H%*%l))
+  b1 = m1 %*% t(V) %*% Y - m1 %*% t(V) %*%( l%*% t(l) %*% (Y - m2)) / b1denom 
+  
+  b2 = t(l) %*% (Y - m2)
+  b2 = b2 / b1denom
+  
+  cbind(model1b$coefficients, c(b1,b2), solve(t(X)%*%X)%*%t(X)%*%Y)
   
 }
