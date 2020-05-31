@@ -2,7 +2,7 @@
 library("easypackages")
 my_packages = c("plyr","tidyr","ggplot2","gridExtra","openxlsx","lubridate","data.table",
                 "VIM","poLCA","lme4","splines","MCMCglmm","nnet","zoo",
-                "plot.matrix")
+                "plot.matrix","zoo")
 #packages(my_packages)
 libraries(my_packages)
 
@@ -13,8 +13,6 @@ x <- as.Date(x, origin = "1899-12-30")
 return(x)}
 
 scalevec <- function(mvec){as.data.frame(qqnorm(mvec))[, 1]}
-#scalevec <- function(mvec){mvec = mvec[!is.na(mvec)];qnorm(order(order(mvec))/length(mvec))}
-#scalevec <- function(mvec){qnorm(ppoints(length(mvec)))[order(order(mvec))]}
 
 backscale <- function(mvec, obs){
   obs = obs[!is.na(obs)]; obs = sort(obs); 
@@ -215,44 +213,6 @@ d = d[pft + mrss + med > 0,] ## 1157 patients from 17,694 rows
 
 d = d[order(Patient.ID, Time)]
 
-##### Define First Medication ##### 
-
-library(BBmisc)
-d[, tmp := which.first(med==1) , by = Patient.ID]
-cvec = function(x,y) {x[y] = 1; x}
-d[,firstmed := 0]; d[, firstmed := cvec(firstmed, tmp[1]), by = Patient.ID]
-# table(d[, sum(med), by=Patient.ID]$V1) # 10 people do not have medication, delete them
-d[, tmp := 1*(sum(med)==0),by = Patient.ID]
-d = d[tmp == 0,]; d[, tmp := NULL]
-#length(unique(d$Patient.ID)) # 1202 -> 1192 (17,887 rows)
-
-##### Set Time = 0 to the 1st Medication Record #####
-d[, MTime := as.numeric(Date - Date[firstmed == 1]), by = Patient.ID]
-
-
-##### Define Outcome as cb (FVC, mRSS) #####
-# Carry backward to the nearest medication record within 6 months
-
-# Index medication records within patient
-d[, ind := cumsum(med), by = Patient.ID]
-# Define tmpid
-d[, tmpid := paste0(Patient.ID, "_", ind)]
-
-# Define cb outcome within 6 months of med
-for(var in c("FVC", "mRSS")){
-  v1 = paste0("cb", var)
-  d[, (v1) := na.locf(get(var),na.rm = F, fromLast = TRUE), by = tmpid]
-  d[, vart := Time]; d[is.na(get(var)), vart := NA]
-  d[, tmp := na.locf(vart,na.rm = F, fromLast = TRUE), by = tmpid]
-  d[, tmp := tmp - Time]
-  # only cb for those <= 6 months
-  d[!is.na(tmp) & tmp > 180 & is.na(FVC) & !is.na(cbFVC), cbFVC := NA] 
-}
-d[, c("vart", "tmp") := NULL]
-#reduce missingness at medication records:
-#FVC: 9750 -> 7027 ##sum(is.na(d$FVC[d$med==1])); sum(is.na(d$cbFVC[d$med==1]))
-#mRSS: 413 -> 384 ##sum(is.na(d$mRSS[d$med==1])); sum(is.na(d$cbmRSS[d$med==1]))
-
 ##### Define Baseline Covariates dosage and cf (FVC, mRSS) #####
 
 # Define dosage as the number of times a subject went on trt from enrollment to a med record
@@ -265,165 +225,17 @@ d[MMF == 1 & nonMMF == 0, type := 2]
 d[MMF == 1 & HCQ == 1, type := 2] # 2 MMF only OR MMF + HCQ
 d[med==0, type := NA]
 
-d[, tmp := 1*(type == 2)]; d[is.na(tmp), tmp:=0]
-d[, MMFdos0 := cumsum(tmp), by = Patient.ID]
-d[MMFdos0 > 5, MMFdos0 := 5]
-
-# Define cf prev (FVC, mRSS)
-## cfFVC0t: how many days ago was the cfFVC0 measured?
-## cfmRSS0t: how many days ago was the cfmRSS0 measured?
-for(var in c("cbFVC", "cbmRSS")){
-  v1 = paste0("cf", var,"0"); v1t = paste0(v1,"t")
-  d[, (v1) := na.locf(get(var),na.rm = F), by = Patient.ID]
-  d[, tmp := Time]; d[is.na(get(var)), tmp:=NA]
-  d[, (v1t) := na.locf(tmp,na.rm = F), by = Patient.ID]
-  d[, (v1t) :=  Time - get(v1t)]
-}
-
-##### Extract Data and Variables #####
-# Keep only those with 
-# 1. Time >= 0 (post On Set)
-# 2. Have at least 3 medication records before data closure
-
-d1 = d[MTime >= 0,] #17664 -> 15985 rows
-d1 = d1[med == 1,] #11643 rows
-
-d1 = d1[, c("Patient.ID", "Time", "MTime", "cbFVC", "cbmRSS", "type", "MMFdos0",
-            "age", "Sex", "ethnic", "Race", "YTime",
-            "ACA", "SCL70", "RNAPol","cfcbFVC0", "cfcbmRSS0","cfcbFVC0t", "cfcbmRSS0t"), with=F]
-
-d1[, N := .N, by=Patient.ID]
-
-### Only look at PAIRS!!
-d1 = d1[N>=2,] # 11472 rows from 977 people; keep those having at least 3 (med) records
-d1 = d1[order(Patient.ID, Time)]
-
-# Define FVCj, mRSSj, typej for j = 1,2
-vn = c("FVC", "mRSS", "type", "Time")
-vn1 = c("cbFVC", "cbmRSS", "type", "Time")
-for(j in 1:4){
-  var = vn1[j]
-  d1[, (paste0(vn[j], 1)) := c(get(var)[-1], NA), by = Patient.ID] # next 1
-  d1[, (paste0(vn[j], 2)) := c(get(paste0(vn[j], 1))[-1], NA), by = Patient.ID] # next 1
-}
-colnames(d1)[ which(colnames(d1)%in% c("Time","cbFVC", "cbmRSS","type"))] = c("Time0","FVC0", "mRSS0", "type0")
-
-### Only take PAIRS!!!
-d1 = d1[,c("Patient.ID", paste0("Time",0:1),
-           paste0("FVC",0:1),paste0("mRSS",0:1),paste0("type",0:1),
-           "MMFdos0",
-           "age", "Sex", "ethnic", "Race", "MTime",
-           "ACA", "SCL70", "RNAPol",
-           "cfcbFVC0", "cfcbmRSS0","cfcbFVC0t", "cfcbmRSS0t"), with=F]
-
-
-##### Identify Qualifed Baselines for PAIRS #####
-# Criteria: subsequent visits each have gap times < 1yr
-d1 = d1[!is.na(Time1),]# 11472 -> 10495
-d1[, gap := Time1 - Time0]
-d1[, qlf := 1*(gap<=1 & gap>90/365)] # on year scale
-d1 = d1[qlf == 1,] # 9044 rows from 944 ppl
-
-##### Variable Processing Before Modeling #####
-d2 = copy(d1)
-d2[, qlf := NULL]
-
-# baseline health outcomes on year scale
-for(v in c("cfcbFVC0t", "cfcbmRSS0t")){
-  d2[, (v) := round(get(v)/365,2)]
-}
 # Sex
-d2$Sex = as.numeric(d2$Sex)
+d$Sex = as.numeric(d$Sex)
 
 # Race (1 white 2 black, use Race_1 and Race_2)
-d2[is.na(Race), Race := 9]; d[Race == 9, Race := 0]
-tmp = class.ind(d2[, Race]); colnames(tmp) = paste0("Race_",colnames(tmp))
-d2 = cbind(d2, tmp[, -ncol(tmp)]); d2[, Race := NULL]
+d[is.na(Race), Race := 9]; d[Race == 9, Race := 0]
+tmp = class.ind(d[, Race]); colnames(tmp) = paste0("Race_",colnames(tmp))
+d = cbind(d, tmp[, -ncol(tmp)]); d[, Race := NULL]
 
 # Ethnic (use ethnic_0 and ethnic_1; indicator of latino)
-d2[is.na(ethnic), ethnic := 9]
-d2[, ethnic_0 := 1*(ethnic == 0)]; d2[, ethnic_1 := 1*(ethnic == 1)]; d2[, ethnic := NULL] 
+d[is.na(ethnic), ethnic := 9]
+d[, ethnic_0 := 1*(ethnic == 0)]; d[, ethnic_1 := 1*(ethnic == 1)]; d[, ethnic := NULL] 
 
-# Define ILD
-#d2[, ILD := 1*(cfcbFVC0 < 70)]
+save(d, file = "tmp_plot.RData")
 
-#V = c("Time0", "MMFdos0", "age", "Sex", "ACA", "SCL70", "RNAPol", "cfcbFVC0q", "cfcbmRSS0q","cfcbFVC0t", "cfcbmRSS0t", "Race_1", "Race_2", "ethnic_0", "ethnic_1")
-V = c("Time0", "MMFdos0", "age", "Sex", "ACA", "SCL70", "RNAPol", "cfcbFVC0", "cfcbmRSS0", "Race_1", "Race_2", "ethnic_0", "ethnic_1", "Time0")
-
-misind = c()
-for(v in V){
-  print(v)
-  print(sum(is.na(d2[,get(v)])))
-  print(d2[,.N,by = get(v)])
-  misind = c(misind, which(is.na(d2[,get(v)])))
-}
-misind = unique(misind)
-
-# Only consider 3-visit windows that have no missingness in V
-d3 = d2[-misind, ] # 8840 pairs from 874 
-
-# Only look at binary trt for now
-for(j in 0:1)
-  d3[, (paste0("A",j)) := 1*(get(paste0("type",j)) ==2)]
-
-###############################################
-###############################################
-###############################################
-### Restrict to only those taking either no trt or MMF
-d3 = d3[type0 %in% c(1,2) & type1 %in% c(1,2),]
-#5577 pairs from 675 ppl
-
-scalevec <- function(mvec){as.data.frame(qqnorm(mvec))[, 1]}
-
-backscale <- function(mvec, obs){
-  obs = obs[!is.na(obs)]; obs = sort(obs); 
-  mvec1 = mvec[!is.na(mvec)]; ind = which(!is.na(mvec))
-  mvec[ind] = obs[ceiling(pnorm(mvec1)*length(obs))]
-  return(mvec)}
-
-# transform health outcomes; DO THIS AT EXACTLY THE DATA FOR MODELING!!!!!!!!!!!
-for(v in c(paste0("FVC",0:1),paste0("mRSS",0:1),"cfcbFVC0", "cfcbmRSS0")){
-  d3[, (paste0(v,"q")) := scalevec(get(v))]
-}
-
-dat = copy(d3)
-save(dat, file = "tmp_JK1.RData")
-
-
-if(0){
-  
-  # Plot One-step Delta
-  
-  par(mfrow=c(1,2))
-  # plot FVC
-  tmp1 = d1[type1 ==2 & Time0 <= 20, list(Time0, (FVC1 - FVC0)) ]
-  tmp0 = d1[type1 ==1 & Time0 <= 20, list(Time0, (FVC1 - FVC0)) ]
-  col1 = 2; col0 = 5
-  # MMF red, no trt black
-  tmp1$col = col1; tmp0$col=col0; tmp = rbind(tmp1, tmp0); tmp = tmp[!is.na(V2)]
-  
-  plot(tmp[,V2], x=tmp[,Time0], col = alpha(tmp$col, 0.3), pch = tmp$col+18,cex=0.2, ylab =expression(Delta~'FVC'[1]),xlab = "Years Since Onset", main = paste0("MMF (N=",sum(tmp$col==col1),") vs No Trt (N=",sum(tmp$col==col0),")"))
-  pd = tmp[col == col0]; pd = pd[order(Time0)]
-  lo <- loess(V2 ~ Time0, data=pd, span=0.30)
-  lines(pd$Time0,predict(lo), col='blue', lwd=3)
-  pd = tmp[col == col1]; pd = pd[order(Time0)]
-  lo <- loess(V2 ~ Time0, data=pd, span=0.30)
-  lines(pd$Time,predict(lo), col='red', lwd=3)
-  
-  # plot mRSS
-  tmp1 = d1[type1 ==2 & Time0 <= 20, list(Time0, (mRSS0 - mRSS1)) ]
-  tmp0 = d1[type1 ==1 & Time0 <= 20, list(Time0, (mRSS0 - mRSS1)) ]
-  
-  col1 = 2; col0 = 5
-  # MMF red, no trt black
-  tmp1$col = col1; tmp0$col=col0; tmp = rbind(tmp1, tmp0); tmp = tmp[!is.na(V2)]
-  
-  plot(tmp[,V2], x=tmp[,Time0], col = alpha(tmp$col, 0.3), pch = tmp$col+18,cex=0.2, ylab =expression(-Delta~'mRSS'[1]),xlab = "Years Since Onset", main = paste0("MMF (N=",sum(tmp$col==col1),") vs No Trt (N=",sum(tmp$col==col0),")"))
-  pd = tmp[col == col0]; pd = pd[order(Time0)]
-  lo <- loess(V2 ~ Time0, data=pd, span=0.30)
-  lines(pd$Time0,predict(lo), col='blue', lwd=3)
-  pd = tmp[col == col1]; pd = pd[order(Time0)]
-  lo <- loess(V2 ~ Time0, data=pd, span=0.30)
-  lines(pd$Time,predict(lo), col='red', lwd=3)
-
-}

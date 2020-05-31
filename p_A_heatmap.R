@@ -1,8 +1,16 @@
-load("Data.RData") #load d
+load("tmp_plot.RData") #load d
+
 mv = c("Pred","MTX","MMF","CTX","IVIG","AZA","Rituximab","Tocilizumab","HCQ","TNF","LEF")
 pd = d[!is.na(med) & med == 1, mv,with=F]
 
 mvs = c("Pred","MTX","MMF","CTX","IVIG","AZA","RTX","TCZ","HCQ","TNF","LEF")
+
+colnames(pd) = mvs
+
+# ordered
+mvs = c("MMF", "HCQ", "Pred", "MTX", "AZA", "TNF", "CTX", "IVIG",
+        "TCZ", "RTX", "LEF")
+pd = pd[, mvs, with=F]
 
 library(ggplot2)
 #library(hrbrthemes)
@@ -58,6 +66,7 @@ if(diag_cmb == "all"){
     }
   }
   lcm$ctlab = as.character(lcm$count); lcm$ctlab[lcm$count == 0] = ""
+  
   p = ggplot(lcm, aes(X, Y, fill= count)) + 
     geom_tile(aes(fill = count)) + geom_text(aes(label=ctlab)) +
     theme(axis.title.x=element_blank(),axis.title.y=element_blank())+
