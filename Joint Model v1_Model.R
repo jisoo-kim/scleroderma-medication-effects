@@ -114,4 +114,20 @@ fit2 <- MCMCglmm(cbind(FVC1q, mRSS1q, A1) ~ trait:(MMFdos0 + age + Sex + ACA + S
 summary(fit2)
 plot(fit2)
 
-
+fit3 <- MCMCglmm(cbind(FVC1q, mRSS1q, A1) ~ trait:(MMFdos0 + age + Sex + ACA + SCL70 + RNAPol + Race_1 + Race_2 + ethnic_0 + ethnic_1) +
+                   
+                   at.level(trait, 1):(A1dup + ns(YTime, knots = c(10, 30), Boundary.knots= c(0, 40)) ) +
+                   at.level(trait, 2):(A1dup + ns(YTime, knots = c(10, 30), Boundary.knots= c(0, 40)) ) +
+                   at.level(trait, 3):(cfcbFVC0q + cfcbmRSS0q + A0),
+                 
+                 random = ~ 
+                   at.level(us(trait + trait:YTime):Patient.ID,1) +
+                   at.level(us(trait + trait:YTime):Patient.ID,2) +
+                   at.level(us(trait):Patient.ID, 3),
+                 
+                 rcov = ~ us(trait):units,
+                 
+                 burnin = 50, nitt = 100, pr = T,
+                 family = c("gaussian", "gaussian", "categorical"), 
+                 
+                 data = dat.comp2)
