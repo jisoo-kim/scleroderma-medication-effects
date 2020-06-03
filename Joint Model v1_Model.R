@@ -4,7 +4,7 @@ Packages <- c("plyr","tidyr","ggplot2","data.table", "MCMCglmm","splines")
 lapply(Packages, library, character.only = TRUE)
 
 ##### Data Read-in ##### 
-load("tmp_JK.Rdata")
+load("tmp_JK1.Rdata")
 
 
 ##### Fit mcmcglmm to FVC, DLCO, MMF as outcome variables #####
@@ -117,21 +117,121 @@ summary(fit2)
 plot(fit2)
 
 #dat.comp2$A1dup = dat.comp2$A1
+
+##### Data Read-in ##### 
+load("tmp_JK1.Rdata")
+dat$A1dup = dat$A1
+dat.comp3 <- dat[!is.na(cfcbFVC0q) & !is.na(cfcbmRSS0q), ]
 fit3 <- MCMCglmm(cbind(FVC1q, mRSS1q, A1) ~ trait:(MMFdos0 + age + Sex + ACA + SCL70 + RNAPol + Race_1 + Race_2 + ethnic_0 + ethnic_1) +
                    
-                   at.level(trait, 1):(A1dup + ns(YTime, knots = c(10, 30), Boundary.knots= c(0, 40)) ) +
-                   at.level(trait, 2):(A1dup + ns(YTime, knots = c(10, 30), Boundary.knots= c(0, 40)) ) +
+                   at.level(trait, 1):(A1dup + ns(Time0, knots = c(10, 30), Boundary.knots= c(0, 40)) ) +
+                   at.level(trait, 2):(A1dup + ns(Time0, knots = c(10, 30), Boundary.knots= c(0, 40)) ) +
                    at.level(trait, 3):(cfcbFVC0q + cfcbmRSS0q + A0),
                  
-                 random = ~ us(at.level(trait, 1):(1 + YTime) +
-                                 at.level(trait, 2):(1 + YTime) +
+                 random = ~ us(at.level(trait, 1):(1 + Time0) +
+                                 at.level(trait, 2):(1 + Time0) +
                                  at.level(trait, 3):(1)):Patient.ID,
                    
                  rcov = ~ us(trait):units,
                  
-                 burnin = 50, nitt = 100, pr = T,
+                 burnin = 1000, nitt = 10000, pr = T,
                  family = c("gaussian", "gaussian", "categorical"), 
                  
-                 data = dat.comp2)
+                 data = dat.comp3)
 
+save(fit3, file = "Joint Model v1_res.RData")
+
+load("Joint Model v1_res.RData")
+summary(fit3)
+
+par("mar")
+par(mar=c(1,1,3,1))
+plot(fit3)
+
+###########################################
+### try shared random effect
+
+dat$A1dup = dat$A1
+dat.comp4 <- dat[!is.na(cfcbFVC0q) & !is.na(cfcbmRSS0q), ]
+fit4 <- MCMCglmm(cbind(FVC1q, mRSS1q, A1) ~ trait:(MMFdos0 + age + Sex + ACA + SCL70 + RNAPol + Race_1 + Race_2 + ethnic_0 + ethnic_1) +
+                   
+                   at.level(trait, 1):(A1dup + ns(Time0, knots = c(10, 30), Boundary.knots= c(0, 40)) ) +
+                   at.level(trait, 2):(A1dup + ns(Time0, knots = c(10, 30), Boundary.knots= c(0, 40)) ) +
+                   at.level(trait, 3):(cfcbFVC0q + cfcbmRSS0q + A0),
+                 
+                 random = ~ us(at.level(trait, 1):(1 + Time0) +
+                                 at.level(trait, 2):(1 + Time0) +
+                                 at.level(trait, 3):(1)):Patient.ID,
+                 
+                 rcov = ~ us(trait):units,
+                 
+                 burnin = 100, nitt = 200, pr = T,
+                 family = c("gaussian", "gaussian", "categorical"), 
+                 
+                 data = dat.comp4)
+
+sf4 = summary(fit4)
+sf4$Gcovariances[,1]
+
+
+fit5 <- MCMCglmm(cbind(FVC1q, mRSS1q, A1) ~ trait:(MMFdos0 + age + Sex + ACA + SCL70 + RNAPol + Race_1 + Race_2 + ethnic_0 + ethnic_1) +
+                   
+                   at.level(trait, 1):(A1dup + ns(Time0, knots = c(10, 30), Boundary.knots= c(0, 40)) ) +
+                   at.level(trait, 2):(A1dup + ns(Time0, knots = c(10, 30), Boundary.knots= c(0, 40)) ) +
+                   at.level(trait, 3):(cfcbFVC0q + cfcbmRSS0q + A0),
+                 
+                 random = ~ us(trait:(1) + 
+                                 at.level(trait, 1):(Time0) +
+                                 at.level(trait, 2):(Time0)):Patient.ID,
+                 
+                 rcov = ~ us(trait):units,
+                 
+                 burnin = 100, nitt = 200, pr = T,
+                 family = c("gaussian", "gaussian", "categorical"), 
+                 
+                 data = dat.comp4)
+
+sf5 = summary(fit5)
+cbind(sf4$Gcovariances[,1],sf5$Gcovariances[,1])
+rbind(names(sf4$Gcovariances[,1]),names(sf5$Gcovariances[,1])) #fit4 equiv fit5
+
+#same rand intercept across outcome
+fit6 <- MCMCglmm(cbind(FVC1q, mRSS1q, A1) ~ trait:(MMFdos0 + age + Sex + ACA + SCL70 + RNAPol + Race_1 + Race_2 + ethnic_0 + ethnic_1) +
+                   
+                   at.level(trait, 1):(A1dup + ns(Time0, knots = c(10, 30), Boundary.knots= c(0, 40)) ) +
+                   at.level(trait, 2):(A1dup + ns(Time0, knots = c(10, 30), Boundary.knots= c(0, 40)) ) +
+                   at.level(trait, 3):(cfcbFVC0q + cfcbmRSS0q + A0),
+                 
+                 random = ~ trait:Patient.ID,
+                 
+                 rcov = ~ us(trait):units,
+                 
+                 burnin = 100, nitt = 200, pr = T,
+                 family = c("gaussian", "gaussian", "categorical"), 
+                 
+                 data = dat.comp4)
+sf6 = summary(fit6)
+sf6$Gcovariances
+names(sf6$Gcovariances[,1])
+
+
+#Doesn't work
+fit6 <- MCMCglmm(cbind(FVC1q, mRSS1q, A1) ~ trait:(MMFdos0 + age + Sex + ACA + SCL70 + RNAPol + Race_1 + Race_2 + ethnic_0 + ethnic_1) +
+                   
+                   at.level(trait, 1):(A1dup + ns(Time0, knots = c(10, 30), Boundary.knots= c(0, 40)) ) +
+                   at.level(trait, 2):(A1dup + ns(Time0, knots = c(10, 30), Boundary.knots= c(0, 40)) ) +
+                   at.level(trait, 3):(cfcbFVC0q + cfcbmRSS0q + A0),
+                 
+                 random = ~ us(at.level(trait,1)+at.level(trait,2)):Patient.ID + 
+                   at.level(trait,3):Patient.ID,
+                 
+                 rcov = ~ us(trait):units,
+                 
+                 burnin = 100, nitt = 200, pr = T,
+                 family = c("gaussian", "gaussian", "categorical"), 
+                 
+                 data = dat.comp4)
+sf6 = summary(fit6)
+sf6$Gcovariances
+names(sf6$Gcovariances[,1])
 
