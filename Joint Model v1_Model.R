@@ -125,11 +125,11 @@ fit3 <- MCMCglmm(cbind(FVC1q, mRSS1q, A1) ~ trait:(MMFdos0 + age + Sex + ACA + S
                                  at.level(trait, 2):(1 + YTime) +
                                  at.level(trait, 3):(1)):Patient.ID,
                    
-                 
                  rcov = ~ us(trait):units,
                  
                  burnin = 50, nitt = 100, pr = T,
                  family = c("gaussian", "gaussian", "categorical"), 
                  
                  data = dat.comp2)
+
 
