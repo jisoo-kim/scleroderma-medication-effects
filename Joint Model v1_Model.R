@@ -102,7 +102,9 @@ fit2 <- MCMCglmm(cbind(FVC1q, mRSS1q, A1) ~ trait:(MMFdos0 + age + Sex + ACA + S
                    at.level(trait, 2):(A1dup) +
                    at.level(trait, 3):(cfcbFVC0q + cfcbmRSS0q + A0),
                  
-                 random = ~ us(trait):Patient.ID,
+                 random = ~  us(at.level(trait, 1):(1 + YTime) +
+                                at.level(trait, 2):(1 + YTime) +
+                                at.level(trait, 3):(1)):Patient.ID,
                  
                  rcov = ~ us(trait):units,
                  
