@@ -133,3 +133,4 @@ fit3 <- MCMCglmm(cbind(FVC1q, mRSS1q, A1) ~ trait:(MMFdos0 + age + Sex + ACA + S
                  
                  data = dat.comp2)
 
+>>>>>>> 206ebc506db63cf46b9d59067f54daba6ce01242
