@@ -205,7 +205,8 @@ fit6 <- MCMCglmm(cbind(FVC1q, mRSS1q, A1) ~ trait:(MMFdos0 + age + Sex + ACA + S
                    at.level(trait, 2):(A1dup + ns(Time0, knots = c(10, 30), Boundary.knots= c(0, 40)) ) +
                    at.level(trait, 3):(cfcbFVC0q + cfcbmRSS0q + A0),
                  
-                 random = ~ trait:Patient.ID ,
+                 random = ~us(trait +
+                              at.set(trait, c(1,2,3)):Time0):Patient.ID,
                  
                  rcov = ~ us(trait):units,
                  
@@ -217,9 +218,36 @@ sf6 = summary(fit6)
 sf6$Gcovariances
 names(sf6$Gcovariances[,1])
 
+#unstructured (b0(1,2), b0(3))
+#us(at.set(trait, c(1,2)) +
+#     at.level(trait,3)):Patient.ID
+
+#unstructured (b0(1,2), b0(3), b1(1,2))
+#us(at.set(trait, c(1,2)):(1+Time0) +
+#     at.level(trait,3)):Patient.ID
+
+#Runs; unclear whether the intercept is only applied for 1 and 2
+#us(at.set(trait, c(1,2)):(1) +
+#     at.level(trait,3):(Time0)   ):Patient.ID
+
+#unstructured intercept and same rand slope across outcome
+#us(trait):Patient.ID + Time0:Patient.ID
+
+#same rand intercept and rand slope across outcome
+#Patient.ID + Time0:Patient.ID
 
 #same rand intercept across outcome
 #random = ~ trait:Patient.ID
+
+#unstructured intercept across outcome, and unstructured slope for (Y1,Y2)
+#     us(trait:(1) + 
+#     at.level(trait, 1):(Time0) +
+#     at.level(trait, 2):(Time0)):Patient.ID
+
 #Doesn't work
 #random = ~ us(at.level(trait,1)+at.level(trait,2)):Patient.ID + 
 #at.level(trait,3):Patient.ID
+
+at.level(trait,1):Patient.ID+
+  at.level(trait,2):Patient.ID + 
+  at.level(trait,3):Patient.ID
