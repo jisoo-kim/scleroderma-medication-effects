@@ -173,6 +173,9 @@ fit4 <- MCMCglmm(cbind(FVC1q, mRSS1q, A1) ~ trait:(MMFdos0 + age + Sex + ACA + S
 sf4 = summary(fit4)
 sf4$Gcovariances[,1]
 
+par("mar")
+par(mar=c(1,1,3,1))
+plot(fit3)
 
 fit5 <- MCMCglmm(cbind(FVC1q, mRSS1q, A1) ~ trait:(MMFdos0 + age + Sex + ACA + SCL70 + RNAPol + Race_1 + Race_2 + ethnic_0 + ethnic_1) +
                    
