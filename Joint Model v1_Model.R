@@ -173,6 +173,9 @@ fit4 <- MCMCglmm(cbind(FVC1q, mRSS1q, A1) ~ trait:(MMFdos0 + age + Sex + ACA + S
 sf4 = summary(fit4)
 sf4$Gcovariances[,1]
 
+par("mar")
+par(mar=c(1,1,3,1))
+plot(fit3)
 
 fit5 <- MCMCglmm(cbind(FVC1q, mRSS1q, A1) ~ trait:(MMFdos0 + age + Sex + ACA + SCL70 + RNAPol + Race_1 + Race_2 + ethnic_0 + ethnic_1) +
                    
@@ -195,43 +198,28 @@ sf5 = summary(fit5)
 cbind(sf4$Gcovariances[,1],sf5$Gcovariances[,1])
 rbind(names(sf4$Gcovariances[,1]),names(sf5$Gcovariances[,1])) #fit4 equiv fit5
 
+# TRY
+fit6 <- MCMCglmm(cbind(FVC1q, mRSS1q, A1) ~ trait:(MMFdos0 + age + Sex + ACA + SCL70 + RNAPol + Race_1 + Race_2 + ethnic_0 + ethnic_1) +
+                   
+                   at.level(trait, 1):(A1dup + ns(Time0, knots = c(10, 30), Boundary.knots= c(0, 40)) ) +
+                   at.level(trait, 2):(A1dup + ns(Time0, knots = c(10, 30), Boundary.knots= c(0, 40)) ) +
+                   at.level(trait, 3):(cfcbFVC0q + cfcbmRSS0q + A0),
+                 
+                 random = ~ trait:Patient.ID ,
+                 
+                 rcov = ~ us(trait):units,
+                 
+                 burnin = 100, nitt = 200, pr = T,
+                 family = c("gaussian", "gaussian", "categorical"), 
+                 
+                 data = dat.comp4)
+sf6 = summary(fit6)
+sf6$Gcovariances
+names(sf6$Gcovariances[,1])
+
+
 #same rand intercept across outcome
-fit6 <- MCMCglmm(cbind(FVC1q, mRSS1q, A1) ~ trait:(MMFdos0 + age + Sex + ACA + SCL70 + RNAPol + Race_1 + Race_2 + ethnic_0 + ethnic_1) +
-                   
-                   at.level(trait, 1):(A1dup + ns(Time0, knots = c(10, 30), Boundary.knots= c(0, 40)) ) +
-                   at.level(trait, 2):(A1dup + ns(Time0, knots = c(10, 30), Boundary.knots= c(0, 40)) ) +
-                   at.level(trait, 3):(cfcbFVC0q + cfcbmRSS0q + A0),
-                 
-                 random = ~ trait:Patient.ID,
-                 
-                 rcov = ~ us(trait):units,
-                 
-                 burnin = 100, nitt = 200, pr = T,
-                 family = c("gaussian", "gaussian", "categorical"), 
-                 
-                 data = dat.comp4)
-sf6 = summary(fit6)
-sf6$Gcovariances
-names(sf6$Gcovariances[,1])
-
-
+#random = ~ trait:Patient.ID
 #Doesn't work
-fit6 <- MCMCglmm(cbind(FVC1q, mRSS1q, A1) ~ trait:(MMFdos0 + age + Sex + ACA + SCL70 + RNAPol + Race_1 + Race_2 + ethnic_0 + ethnic_1) +
-                   
-                   at.level(trait, 1):(A1dup + ns(Time0, knots = c(10, 30), Boundary.knots= c(0, 40)) ) +
-                   at.level(trait, 2):(A1dup + ns(Time0, knots = c(10, 30), Boundary.knots= c(0, 40)) ) +
-                   at.level(trait, 3):(cfcbFVC0q + cfcbmRSS0q + A0),
-                 
-                 random = ~ us(at.level(trait,1)+at.level(trait,2)):Patient.ID + 
-                   at.level(trait,3):Patient.ID,
-                 
-                 rcov = ~ us(trait):units,
-                 
-                 burnin = 100, nitt = 200, pr = T,
-                 family = c("gaussian", "gaussian", "categorical"), 
-                 
-                 data = dat.comp4)
-sf6 = summary(fit6)
-sf6$Gcovariances
-names(sf6$Gcovariances[,1])
-
+#random = ~ us(at.level(trait,1)+at.level(trait,2)):Patient.ID + 
+#at.level(trait,3):Patient.ID
