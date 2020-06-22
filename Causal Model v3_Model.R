@@ -1,4 +1,4 @@
-# Fit PENCOMP
+# Fit PENCOMP -- INFLUENCE FUNCTION
 library(nlme)
 library(RcppArmadillo);library(Rcpp)
 sourceCpp("cfunctions.cpp")
